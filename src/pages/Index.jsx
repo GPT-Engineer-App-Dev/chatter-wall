@@ -1,8 +1,10 @@
 import { Container, VStack, Box, Heading, Text, Input, Textarea, Button, Flex } from "@chakra-ui/react";
 import { useState } from "react";
+import { usePosts, useAddPost } from '../integrations/supabase/api';
 
 const Index = () => {
-  const [posts, setPosts] = useState([]);
+  const { data: posts, isLoading, isError } = usePosts();
+  const addPostMutation = useAddPost();
   const [newPost, setNewPost] = useState({ title: "", content: "" });
 
   const handleInputChange = (e) => {
@@ -13,7 +15,7 @@ const Index = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (newPost.title && newPost.content) {
-      setPosts([...posts, newPost]);
+      addPostMutation.mutate({ title: newPost.title, body: newPost.content });
       setNewPost({ title: "", content: "" });
     }
   };
@@ -27,13 +29,17 @@ const Index = () => {
       <VStack spacing={6} align="stretch">
         <Box as="main" flex="1">
           <Heading size="md" mb={4}>Posts</Heading>
-          {posts.length === 0 ? (
+          {isLoading ? (
+            <Text>Loading...</Text>
+          ) : isError ? (
+            <Text>Error loading posts.</Text>
+          ) : posts.length === 0 ? (
             <Text>No posts yet. Be the first to post!</Text>
           ) : (
-            posts.map((post, index) => (
-              <Box key={index} p={4} shadow="md" borderWidth="1px" borderRadius="md">
+            posts.map((post) => (
+              <Box key={post.id} p={4} shadow="md" borderWidth="1px" borderRadius="md">
                 <Heading size="sm">{post.title}</Heading>
-                <Text mt={2}>{post.content}</Text>
+                <Text mt={2}>{post.body}</Text>
               </Box>
             ))
           )}
@@ -55,7 +61,7 @@ const Index = () => {
             value={newPost.content}
             onChange={handleInputChange}
           />
-          <Button type="submit" colorScheme="blue">Submit</Button>
+          <Button type="submit" colorScheme="blue" isLoading={addPostMutation.isLoading}>Submit</Button>
         </Box>
       </VStack>
     </Container>
